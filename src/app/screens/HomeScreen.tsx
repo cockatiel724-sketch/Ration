@@ -227,13 +227,24 @@ export function HomeScreen({
           >
             {user.photoURL
               ? <img src={user.photoURL} alt="" className="h-full w-full object-cover" />
-              : initials}
+              : <span className="text-xs">{user.isAnonymous ? "ゲスト" : initials}</span>}
           </button>
           {menuOpen && (
             <div className="absolute right-0 top-12 z-10 w-56 rounded-2xl border border-border bg-card p-2 shadow-xl">
               <div className="px-3 py-2">
-                <p className="truncate text-sm font-medium">{user.displayName || "Rationユーザー"}</p>
-                <p className="truncate text-[10px] text-muted-foreground">{user.email}</p>
+                {user.isAnonymous ? (
+                  <>
+                    <p className="text-sm font-medium">ゲストユーザー</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      データはこの端末に保存されています
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="truncate text-sm font-medium">{user.displayName || "Rationユーザー"}</p>
+                    <p className="truncate text-[10px] text-muted-foreground">{user.email}</p>
+                  </>
+                )}
               </div>
               <button
                 onClick={onLogout}

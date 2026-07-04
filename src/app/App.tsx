@@ -4,7 +4,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Home, Clock, PlusCircle, Settings, BarChart2 } from "lucide-react";
-import { onAuthStateChanged, signInWithPopup, signOut, type User } from "firebase/auth";
+import { onAuthStateChanged, signInWithPopup, signInAnonymously, signOut, type User } from "firebase/auth";
 
 import {
   getStorageMode, saveBudgetData, subscribeBudgetData, type BudgetData,
@@ -214,6 +214,21 @@ export default function App() {
     catch (error) { console.error(error); setAuthError("Googleログインに失敗しました。"); }
   };
 
+  /**
+   * ゲストログイン（Firebase 匿名認証）
+   * → ゲスト固有の uid が発行され、Firestore に "users/{uid}" として保存される
+   * → user.isAnonymous === true で識別できる
+   * → Firebaseコンソールで Authentication > Sign-in method > 匿名 を有効にする必要あり
+   */
+  const handleGuestLogin = async () => {
+    setAuthError("");
+    if (!hasFirebaseConfig || !auth) {
+      setAuthError("Firebase設定が見つかりません。.env を確認してください。"); return;
+    }
+    try { await signInAnonymously(auth); }
+    catch (error) { console.error(error); setAuthError("ゲストログインに失敗しました。"); }
+  };
+
   const handleLogout = async () => {
     if (!auth) return;
     await signOut(auth);
@@ -299,7 +314,7 @@ export default function App() {
   if (booting || !authReady) {
     return <SplashScreen onFinished={() => setBooting(false)} />;
   }
-  if (!user) return <LoginScreen onLogin={handleGoogleLogin} error={authError} />;
+  if (!user) return <LoginScreen onLogin={handleGoogleLogin} onGuestLogin={handleGuestLogin} error={authError} />;
 
   const byDate = groupByDate(visibleTransactions);
 

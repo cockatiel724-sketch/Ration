@@ -109,10 +109,11 @@ export function SplashScreen({ onFinished }: SplashScreenProps) {
 
 interface LoginScreenProps {
   onLogin: () => void;
+  onGuestLogin: () => void;
   error: string;
 }
 
-export function LoginScreen({ onLogin, error }: LoginScreenProps) {
+export function LoginScreen({ onLogin, onGuestLogin, error }: LoginScreenProps) {
   return (
     <div style={{
       height: "100dvh",
@@ -154,6 +155,35 @@ export function LoginScreen({ onLogin, error }: LoginScreenProps) {
         >
           Googleでログイン
         </button>
+
+        {/* 区切り線 */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "16px 0" }}>
+          <div style={{ flex: 1, height: 1, background: "#e5e7eb" }} />
+          <span style={{ fontSize: 11, color: "#9ca3af" }}>または</span>
+          <div style={{ flex: 1, height: 1, background: "#e5e7eb" }} />
+        </div>
+
+        {/* ゲストログインボタン */}
+        <button
+          onClick={onGuestLogin}
+          style={{
+            width: "100%",
+            padding: "14px",
+            borderRadius: 16,
+            border: "1.5px dashed #d1d5db",
+            background: "#f9fafb",
+            fontSize: 14,
+            fontWeight: 600,
+            color: "#6b7280",
+            cursor: "pointer",
+            fontFamily: "inherit",
+          }}
+        >
+          ゲストとして試す
+        </button>
+        <p style={{ marginTop: 8, fontSize: 11, color: "#9ca3af" }}>
+          ゲストのデータは端末ごとに保存されます
+        </p>
 
         {/* エラー */}
         {error && (
