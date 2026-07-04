@@ -4,7 +4,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Home, Clock, PlusCircle, Settings, BarChart2 } from "lucide-react";
-import { onAuthStateChanged, signInWithPopup, signInAnonymously, signOut, type User } from "firebase/auth";
+import { onAuthStateChanged, signInWithPopup, signInWithEmailAndPassword, signOut, type User } from "firebase/auth";
 
 import {
   getStorageMode, saveBudgetData, subscribeBudgetData, type BudgetData,
@@ -215,18 +215,44 @@ export default function App() {
   };
 
   /**
-   * ゲストログイン（Firebase 匿名認証）
-   * → ゲスト固有の uid が発行され、Firestore に "users/{uid}" として保存される
-   * → user.isAnonymous === true で識別できる
-   * → Firebaseコンソールで Authentication > Sign-in method > 匿名 を有効にする必要あり
+   * ゲストログイン（固定デモアカウント）
+   *
+   * 固定のメールアドレス＋パスワードで自動ログインする。
+   * どの端末・ブラウザからでも同じ uid でログインできるため、
+   * Firestore 上のデモデータを全員で共有できる。
+   *
+   * ── セットアップ手順 ──
+   * 1. Firebase コンソール → Authentication → Sign-in method
+   *    「メール/パスワード」を有効化
+   * 2. Authentication → Users → 「ユーザーを追加」
+   *    メール: demo@ration-app.com
+   *    パスワード: RationDemo2024!
+   * 3. そのユーザーの UID で Firestore にデモデータを投入
+   *    （下の SAMPLE_TRANSACTIONS が自動で使われる）
+   *
+   * ── セキュリティ注意 ──
+   * このアカウントのデータは誰でも見られる・編集できる前提。
+   * 個人情報は入れないこと。Firestore のルールで書き込みを
+   * 制限したい場合は read-only ルールに変更することもできる。
    */
+  const GUEST_EMAIL    = "demo@ration-app.com";
+  const GUEST_PASSWORD = "RationDemo2024!";
+
   const handleGuestLogin = async () => {
     setAuthError("");
     if (!hasFirebaseConfig || !auth) {
       setAuthError("Firebase設定が見つかりません。.env を確認してください。"); return;
     }
-    try { await signInAnonymously(auth); }
-    catch (error) { console.error(error); setAuthError("ゲストログインに失敗しました。"); }
+    try {
+      await signInWithEmailAndPassword(auth, GUEST_EMAIL, GUEST_PASSWORD);
+    } catch (error: any) {
+      console.error(error);
+      if (error.code === "auth/user-not-found" || error.code === "auth/invalid-credential") {
+        setAuthError("デモアカウントが未作成です。Firebase コンソールで作成してください。");
+      } else {
+        setAuthError("ゲストログインに失敗しました。");
+      }
+    }
   };
 
   const handleLogout = async () => {
