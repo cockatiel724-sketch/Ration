@@ -139,7 +139,7 @@ export default function App() {
 
             const toAdd: Transaction[] = [];
             loadedFixed.forEach((fe) => {
-              if (today < fe.dayOfMonth) return; // まだ今月の記録日が来ていない
+              if (today < fe.dayOfMonth) return;
               const exists = loadedTxs.some(
                 (t) => t.fixedExpenseId === fe.id && t.date.startsWith(ym)
               );
@@ -170,7 +170,22 @@ export default function App() {
           setFavorites(data.favorites as FavoriteItem[]);
           setPaymentMethods(data.paymentMethods);
           setDark(data.dark);
+
+        } else {
+          // ── data が null = Firestoreにデータなし（初回ログイン）──
+          // デモアカウントの場合だけ SAMPLE_TRANSACTIONS を自動投入して保存する
+          const DEMO_EMAIL = "demo@ration-app.com";
+          if (user.email === DEMO_EMAIL) {
+            isApplyingRemoteData.current = false; // 保存トリガーを有効にする
+            // state をサンプルデータで初期化 → useEffect が変化を検知して自動保存
+            setTransactions(SAMPLE_TRANSACTIONS);
+            setFavorites(DEFAULT_FAVORITES);
+            setPaymentMethods(DEFAULT_PAYMENT_METHODS);
+            setCategories(DEFAULT_CATEGORIES);
+            setSyncMessage("デモデータを初期化しています...");
+          }
         }
+
         hasLoaded.current = true;
         setSyncMessage(`${getStorageMode()}で保存中`);
       },
