@@ -180,7 +180,7 @@ export function LoginScreen({ onLogin, onGuestLogin, error }: LoginScreenProps) 
           ゲストとして試す
         </button>
         <p style={{ marginTop: 8, fontSize: 11, color: "#9ca3af" }}>
-          ゲストのデータは端末ごとに保存されます
+          デモデータを確認できます
         </p>
 
         {/* エラー */}
