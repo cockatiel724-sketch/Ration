@@ -30,7 +30,13 @@ export interface Transaction {
   paymentMethod: string;
   isEssential: boolean;
   type: RecordType;
-  fixedExpenseId?: string; // 固定費から自動生成された場合のID（任意）
+  fixedExpenseId?: string;
+  /**
+   * true のとき「レシート親行（表示専用）」として扱う。
+   * 金額集計・グラフ分析からは除外し、
+   * 内訳行（_line*）の合計として表示するためだけに使う。
+   */
+  isReceiptMeta?: boolean;
 }
 
 export interface FavoriteItem {

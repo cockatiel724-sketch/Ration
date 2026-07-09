@@ -251,7 +251,8 @@ export function RecordScreen({
             </div>
           </div>
 
-          {/* ── カテゴリー ── */}
+          {/* ── カテゴリー（内訳なしのときのみ表示） ── */}
+          {!showItemLines && (
           <div className="rounded-2xl bg-card border border-border p-4">
             <p className="text-[10px] text-muted-foreground tracking-widest mb-3">カテゴリー</p>
             <div className="flex flex-wrap gap-1.5">
@@ -281,6 +282,7 @@ export function RecordScreen({
               )}
             </div>
           </div>
+          )}
 
           {/* ── 支払い方法 ── */}
           <div className="rounded-2xl bg-card border border-border p-4">
@@ -300,7 +302,8 @@ export function RecordScreen({
             </div>
           </div>
 
-          {/* ── 必需品 / 娯楽 ── */}
+          {/* ── 必需品 / 娯楽（内訳なしのときのみ） ── */}
+          {!showItemLines && (
           <div className="rounded-2xl bg-card border border-border p-4">
             <p className="text-[10px] text-muted-foreground tracking-widest mb-3">種別</p>
             <div className="flex gap-2">
@@ -314,6 +317,7 @@ export function RecordScreen({
                 }`}>娯楽</button>
             </div>
           </div>
+          )}
 
           {/* ────────────────────────────────────────────────── */}
           {/* ── 内訳セクション ────────────────────────────── */}

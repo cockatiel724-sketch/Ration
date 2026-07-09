@@ -66,7 +66,8 @@ export default function App() {
     () => transactions.filter((t) => getMonthKey(t.date) === monthKey),
     [transactions, monthKey],
   );
-  const expenses  = visibleTransactions.filter((t) => t.type === "expense");
+  // isReceiptMeta=true（レシート親行）は集計から除外する
+  const expenses  = visibleTransactions.filter((t) => t.type === "expense" && !t.isReceiptMeta);
   const total     = expenses.reduce((s, t) => s + t.amount, 0);
   const essential = expenses.filter((t) => t.isEssential).reduce((s, t) => s + t.amount, 0);
 
@@ -283,19 +284,23 @@ export default function App() {
     const now = Date.now();
 
     if (form.type === "expense" && itemLines && itemLines.length > 0) {
-      // ── 内訳ありの場合：内訳行ごとに個別のトランザクションを作成 ──
-      // メインの品名は「合計」レコードとして残し、内訳は別レコードで追加
+      // ── 内訳ありの場合 ──────────────────────────────────────────
+      // mainTx は「表示専用の親行」として isReceiptMeta: true を付ける。
+      // 集計・グラフには使わず、カレンダーやホームの一覧で
+      // 「まとめて1件」として見せるためだけに保存する。
+      // 実際の金額集計は _line* の内訳行だけで行う。
       const mainTx: Transaction = {
-        id:            `${now}_main`,
-        date:          form.date,
-        amount:        parseInt(form.amount, 10),
-        item:          form.item,
-        store:         form.store,
-        category:      form.category,
-        subcategory:   "",
-        paymentMethod: form.paymentMethod,
-        isEssential:   form.isEssential,
-        type:          "expense",
+        id:              `${now}_main`,
+        date:            form.date,
+        amount:          parseInt(form.amount, 10), // 表示用の合計金額（集計には使わない）
+        item:            form.item,
+        store:           form.store,
+        category:        "",           // カテゴリーは内訳行に任せるため空
+        subcategory:     "",
+        paymentMethod:   form.paymentMethod,
+        isEssential:     form.isEssential,
+        type:            "expense",
+        isReceiptMeta:   true,         // ← 集計除外フラグ
       };
       const lineTxs: Transaction[] = itemLines
         .filter((l) => l.item.trim() && Number(l.amount) > 0)
@@ -351,13 +356,28 @@ export default function App() {
     setTransactions((prev) => prev.filter((t) => t.id !== id));
   };
 
+  // 一覧表示用：_line*（内訳子行）を除外して親行・通常行だけ表示する
+  // useMemoはreturn文より前に置く必要がある（Reactのルール）
+  const displayTransactions = useMemo(
+    () => visibleTransactions.filter((t) => !t.id.match(/_line\d+$/)),
+    [visibleTransactions],
+  );
+  const byDate = groupByDate(displayTransactions);
+
+  // ホームの最近の支出も _line* を除外し、親行（_main）を優先表示
+  const recentExpenses = displayTransactions
+    .filter((t) => t.type === "expense")
+    .slice(0, 5);
+
   // ── 画面振り分け ────────────────────────────────────────
-  if (booting || !authReady) {
+  if (booting) {
     return <SplashScreen onFinished={() => setBooting(false)} />;
   }
+  if (!authReady) {
+    // アニメーション完了・Firebase確認中 → 静止ロゴで待機（白画面にしない）
+    return <SplashScreen onFinished={undefined} />;
+  }
   if (!user) return <LoginScreen onLogin={handleGoogleLogin} onGuestLogin={handleGuestLogin} error={authError} />;
-
-  const byDate = groupByDate(visibleTransactions);
 
   return (
     <div className={dark ? "dark" : ""} style={{ height: "100dvh" }}>
@@ -370,7 +390,7 @@ export default function App() {
               pieData={buildPieData(visibleTransactions)}
               dailyData={buildDailyData(visibleTransactions, monthKey)}
               monthlyData={buildMonthlyData(transactions, monthOptions)}
-              recentTxs={expenses.slice(0, 5)}
+              recentTxs={recentExpenses}
               categoryColorMap={categoryColorMap}
               categoryIconMap={categoryIconMap}
               allTransactions={transactions}

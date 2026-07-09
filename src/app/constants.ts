@@ -164,12 +164,19 @@ export const commas = (n: number) => n.toLocaleString("ja-JP");
 
 // ─── データ集計 ──────────────────────────────────────────────
 
+// isReceiptMeta=true（レシート親行・表示専用）は集計から除外する
+const forStats = (txs: Transaction[]) => txs.filter((t) => !t.isReceiptMeta);
+
+// カレンダー・履歴一覧用：親行（_main）は残す（表示に使う）
 export const groupByDate = (txs: Transaction[]): Record<string, Transaction[]> =>
   txs.reduce<Record<string, Transaction[]>>((acc, t) => { (acc[t.date] ||= []).push(t); return acc; }, {});
 
 export const buildPieData = (txs: Transaction[]) => {
   const map: Record<string, number> = {};
-  txs.filter((t) => t.type === "expense").forEach((t) => { map[t.category] = (map[t.category] || 0) + t.amount; });
+  // isReceiptMeta を除外して集計
+  forStats(txs).filter((t) => t.type === "expense").forEach((t) => {
+    map[t.category] = (map[t.category] || 0) + t.amount;
+  });
   return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
 };
 
@@ -181,15 +188,21 @@ export const daysInMonth   = (key: string)  => { const [y, m] = key.split("-").m
 
 export const buildDailyData = (txs: Transaction[], monthKey: string) =>
   Array.from({ length: daysInMonth(monthKey) }, (_, i) => {
-    const day = i + 1;
+    const day  = i + 1;
     const date = `${monthKey}-${String(day).padStart(2, "0")}`;
-    return { day: String(day), amount: txs.filter((t) => t.date === date && t.type === "expense").reduce((s, t) => s + t.amount, 0) };
+    return {
+      day: String(day),
+      amount: forStats(txs).filter((t) => t.date === date && t.type === "expense").reduce((s, t) => s + t.amount, 0),
+    };
   });
 
 export const buildMonthlyData = (txs: Transaction[], monthOptions: string[]) =>
   [...monthOptions].slice(0, 12).reverse().map((key) => {
     const [, m] = key.split("-");
-    return { month: `${Number(m)}月`, amount: txs.filter((t) => t.date.startsWith(key) && t.type === "expense").reduce((s, t) => s + t.amount, 0) };
+    return {
+      month:  `${Number(m)}月`,
+      amount: forStats(txs).filter((t) => t.date.startsWith(key) && t.type === "expense").reduce((s, t) => s + t.amount, 0),
+    };
   });
 
 // ─── 支払い方法アイコン ──────────────────────────────────────

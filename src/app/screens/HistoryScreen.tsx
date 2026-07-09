@@ -108,7 +108,7 @@ function SwipeRow({ t, isOpen, onOpen, onClose, onDeleteRequest, color, icon, al
         className="flex items-center gap-2.5 py-2.5 bg-card transition-transform duration-200 cursor-grab select-none"
         style={{ transform: isOpen ? `translateX(-${DELETE_W}px)` : "translateX(0)", paddingRight: isOpen ? 12 : 0 }}>
         <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${color}18` }}>
-          {t.type === "expense" ? <CategoryIcon icon={icon} size={14} style={{ color }} /> : <TrendingUp size={14} style={{ color: INCOME_CATEGORY_COLORS[t.category as keyof typeof INCOME_CATEGORY_COLORS] ?? "#60a5fa" }} />}
+          {t.type === "expense" && !t.isReceiptMeta ? <CategoryIcon icon={icon} size={14} style={{ color }} /> : <TrendingUp size={14} style={{ color: INCOME_CATEGORY_COLORS[t.category as keyof typeof INCOME_CATEGORY_COLORS] ?? "#60a5fa" }} />}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1">
@@ -122,7 +122,7 @@ function SwipeRow({ t, isOpen, onOpen, onClose, onDeleteRequest, color, icon, al
             <p className={`text-sm font-semibold ${t.type === "income" ? "text-primary" : ""}`} style={{ fontFamily: "'DM Mono', monospace" }}>
               {t.type === "income" ? "+" : ""}{yen(t.amount)}
             </p>
-            {t.type === "expense" && (
+            {t.type === "expense" && !t.isReceiptMeta && (
               <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${t.isEssential ? "bg-blue-500/15 text-blue-400" : "bg-pink-500/15 text-pink-400"}`}>
                 {t.isEssential ? "必需品" : "娯楽"}
               </span>
@@ -194,8 +194,8 @@ function CategoryChart({ monthKey, allTransactions, categoryColorMap, categoryIc
   const FALLBACK = "#94a3b8";
 
   const src = mode === "month"
-    ? allTransactions.filter((t) => t.type === "expense" && t.date.startsWith(monthKey))
-    : allTransactions.filter((t) => t.type === "expense");
+    ? allTransactions.filter((t) => t.type === "expense" && !t.isReceiptMeta && t.date.startsWith(monthKey))
+    : allTransactions.filter((t) => t.type === "expense" && !t.isReceiptMeta);
 
   const total = src.reduce((s, t) => s + t.amount, 0);
   const map: Record<string, number> = {};
@@ -255,8 +255,8 @@ function EssentialLeisureChart({ monthKey, allTransactions }: { monthKey: string
   const [mode, setMode] = useState<"month" | "all">("month");
 
   const src = mode === "month"
-    ? allTransactions.filter((t) => t.type === "expense" && t.date.startsWith(monthKey))
-    : allTransactions.filter((t) => t.type === "expense");
+    ? allTransactions.filter((t) => t.type === "expense" && !t.isReceiptMeta && t.date.startsWith(monthKey))
+    : allTransactions.filter((t) => t.type === "expense" && !t.isReceiptMeta);
 
   const essential = src.filter((t) => t.isEssential).reduce((s, t) => s + t.amount, 0);
   const leisure   = src.filter((t) => !t.isEssential).reduce((s, t) => s + t.amount, 0);
@@ -318,8 +318,8 @@ function DayOfWeekChart({ monthKey, allTransactions }: { monthKey: string; allTr
   const DOW = ["日", "月", "火", "水", "木", "金", "土"];
 
   const src = mode === "month"
-    ? allTransactions.filter((t) => t.type === "expense" && t.date.startsWith(monthKey))
-    : allTransactions.filter((t) => t.type === "expense");
+    ? allTransactions.filter((t) => t.type === "expense" && !t.isReceiptMeta && t.date.startsWith(monthKey))
+    : allTransactions.filter((t) => t.type === "expense" && !t.isReceiptMeta);
 
   const dowMap = [0, 0, 0, 0, 0, 0, 0];
   src.forEach((t) => { dowMap[new Date(t.date + "T00:00:00").getDay()] += t.amount; });
@@ -353,8 +353,8 @@ function PaymentMethodChart({ monthKey, allTransactions }: { monthKey: string; a
   const [mode, setMode] = useState<"month" | "all">("month");
 
   const src = mode === "month"
-    ? allTransactions.filter((t) => t.type === "expense" && t.date.startsWith(monthKey))
-    : allTransactions.filter((t) => t.type === "expense");
+    ? allTransactions.filter((t) => t.type === "expense" && !t.isReceiptMeta && t.date.startsWith(monthKey))
+    : allTransactions.filter((t) => t.type === "expense" && !t.isReceiptMeta);
 
   const map: Record<string, number> = {};
   src.forEach((t) => { const k = t.paymentMethod || "未設定"; map[k] = (map[k] ?? 0) + t.amount; });
@@ -404,8 +404,8 @@ function StoreChart({ monthKey, allTransactions }: { monthKey: string; allTransa
   const [mode, setMode] = useState<"month" | "all">("month");
 
   const src = mode === "month"
-    ? allTransactions.filter((t) => t.type === "expense" && t.date.startsWith(monthKey) && t.store?.trim())
-    : allTransactions.filter((t) => t.type === "expense" && t.store?.trim());
+    ? allTransactions.filter((t) => t.type === "expense" && !t.isReceiptMeta && t.date.startsWith(monthKey) && t.store?.trim())
+    : allTransactions.filter((t) => t.type === "expense" && !t.isReceiptMeta && t.store?.trim());
 
   const map: Record<string, { amount: number; count: number }> = {};
   src.forEach((t) => {
@@ -483,7 +483,7 @@ function RankingChart({ monthKey, allTransactions, categoryColorMap, categoryIco
     const base = mode === "month"
       ? allTransactions.filter((t) => t.date.startsWith(monthKey))
       : allTransactions; // "all" も "single" も全期間から引く
-    return base.filter((t) => t.type === "expense");
+    return base.filter((t) => t.type === "expense" && !t.isReceiptMeta);
   })();
 
   // 「単品」モード：同じ品名×店舗の組み合わせで1件ずつに集約（最高額を代表値として使用）
@@ -663,9 +663,9 @@ function ChartView({ monthKey, monthOptions, allTransactions, categoryColorMap, 
     return {
       month:   `${Number(m)}月`,
       income:  txs.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0),
-      expense: txs.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0),
+      expense: txs.filter((t) => t.type === "expense" && !t.isReceiptMeta).reduce((s, t) => s + t.amount, 0),
       balance: txs.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0)
-             - txs.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0),
+             - txs.filter((t) => t.type === "expense" && !t.isReceiptMeta).reduce((s, t) => s + t.amount, 0),
     };
   });
 
@@ -725,10 +725,10 @@ export function HistoryScreen({
   const FALLBACK_ICON  = "Package";
 
   const allTxs       = Object.values(byDate).flat();
-  const monthExpense = allTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
+  const monthExpense = allTxs.filter((t) => t.type === "expense" && !t.isReceiptMeta).reduce((s, t) => s + t.amount, 0);
   const monthIncome  = allTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
   const balance      = monthIncome - monthExpense;
-  const activeDays   = Object.keys(byDate).filter((d) => byDate[d].some((t) => t.type === "expense")).length;
+  const activeDays   = Object.keys(byDate).filter((d) => byDate[d].some((t) => t.type === "expense" && !t.isReceiptMeta)).length;
   const avgPerDay    = Math.round(monthExpense / DAYS);
   const validSelected = selectedDate && selectedDate.startsWith(monthKey) && byDate[selectedDate];
 
@@ -799,7 +799,7 @@ export function HistoryScreen({
                   const day     = i + 1;
                   const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                   const dayTxs  = byDate[dateStr] ?? [];
-                  const dayExp  = dayTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
+                  const dayExp  = dayTxs.filter((t) => t.type === "expense" && !t.isReceiptMeta).reduce((s, t) => s + t.amount, 0);
                   const dayInc  = dayTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
                   const isSel   = selectedDate === dateStr;
                   const isToday = dateStr === TODAY;
@@ -825,7 +825,7 @@ export function HistoryScreen({
                       {Number(selectedDate!.slice(5, 7))}月{Number(selectedDate!.slice(8, 10))}日の記録
                     </p>
                     <p className="text-lg font-bold mt-0.5" style={{ fontFamily: "'DM Mono', monospace" }}>
-                      {yen(byDate[selectedDate!].filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0))}
+                      {yen(byDate[selectedDate!].filter((t) => t.type === "expense" && !t.isReceiptMeta).reduce((s, t) => s + t.amount, 0))}
                     </p>
                   </div>
                   <div className="flex items-center gap-1">

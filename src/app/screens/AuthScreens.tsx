@@ -37,28 +37,26 @@ type AnimPhase = "waiting" | "pinch-in" | "pinch-out" | "done-wait";
 
 export function SplashScreen({ onFinished }: SplashScreenProps) {
   const [phase, setPhase] = useState<AnimPhase>("waiting");
-  const calledRef = useRef(false);
+  const calledRef    = useRef(false);
+  // onFinished を ref で保持することで useEffect の依存配列から外す
+  // → onFinished が undefined に変わってもアニメーションが再起動しない
+  const onFinishedRef = useRef(onFinished);
+  onFinishedRef.current = onFinished;
 
   useEffect(() => {
-    // ── タイムライン（すべてsetTimeoutで管理） ──
-    // 0ms    : 表示開始（"waiting" 静止）
-    // 500ms  : ピンチイン開始（縮小 300ms）
-    // 800ms  : ピンチアウト開始（拡大 400ms）
-    // 1200ms : 静止（"done-wait"）
-    // 1700ms : onFinished() → 画面遷移
-
+    // アニメーションは初回マウント時の1回だけ実行する
     const t1 = window.setTimeout(() => setPhase("pinch-in"),   500);
     const t2 = window.setTimeout(() => setPhase("pinch-out"),  800);
     const t3 = window.setTimeout(() => setPhase("done-wait"), 1200);
     const t4 = window.setTimeout(() => {
       if (!calledRef.current) {
         calledRef.current = true;
-        onFinished?.();
+        onFinishedRef.current?.();
       }
     }, 1700);
 
     return () => { [t1,t2,t3,t4].forEach(window.clearTimeout); };
-  }, [onFinished]);
+  }, []); // 空配列 = マウント時1回だけ実行
 
   // フェーズごとのスケール・トランジション
   const scaleMap: Record<AnimPhase, number> = {
@@ -182,7 +180,7 @@ export function LoginScreen({ onLogin, onGuestLogin, error }: LoginScreenProps) 
           ゲストとして試す
         </button>
         <p style={{ marginTop: 8, fontSize: 11, color: "#9ca3af" }}>
-          デモデータを確認できます
+          ゲストのデータは端末ごとに保存されます
         </p>
 
         {/* エラー */}
