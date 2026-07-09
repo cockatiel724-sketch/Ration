@@ -724,10 +724,12 @@ export function HistoryScreen({
   const FALLBACK_COLOR = "#94a3b8";
   const FALLBACK_ICON  = "Package";
 
-  const allTxs       = Object.values(byDate).flat();
+  // 月集計はallTransactionsから（_line*含む・isReceiptMeta除外）
+  const allTxs       = allTransactions.filter((t) => t.date.startsWith(monthKey));
   const monthExpense = allTxs.filter((t) => t.type === "expense" && !t.isReceiptMeta).reduce((s, t) => s + t.amount, 0);
   const monthIncome  = allTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
   const balance      = monthIncome - monthExpense;
+  // 支出日数は表示用byDate経由でOK（日付の存在チェックだけなので）
   const activeDays   = Object.keys(byDate).filter((d) => byDate[d].some((t) => t.type === "expense" && !t.isReceiptMeta)).length;
   const avgPerDay    = Math.round(monthExpense / DAYS);
   const validSelected = selectedDate && selectedDate.startsWith(monthKey) && byDate[selectedDate];
@@ -799,8 +801,10 @@ export function HistoryScreen({
                   const day     = i + 1;
                   const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                   const dayTxs  = byDate[dateStr] ?? [];
-                  const dayExp  = dayTxs.filter((t) => t.type === "expense" && !t.isReceiptMeta).reduce((s, t) => s + t.amount, 0);
-                  const dayInc  = dayTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
+                  // 金額集計はallTransactionsから（_line*含む・_main=isReceiptMeta除外）
+                  const allDayTxs = allTransactions.filter((t) => t.date === dateStr);
+                  const dayExp  = allDayTxs.filter((t) => t.type === "expense" && !t.isReceiptMeta).reduce((s, t) => s + t.amount, 0);
+                  const dayInc  = allDayTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
                   const isSel   = selectedDate === dateStr;
                   const isToday = dateStr === TODAY;
                   return (
@@ -825,7 +829,7 @@ export function HistoryScreen({
                       {Number(selectedDate!.slice(5, 7))}月{Number(selectedDate!.slice(8, 10))}日の記録
                     </p>
                     <p className="text-lg font-bold mt-0.5" style={{ fontFamily: "'DM Mono', monospace" }}>
-                      {yen(byDate[selectedDate!].filter((t) => t.type === "expense" && !t.isReceiptMeta).reduce((s, t) => s + t.amount, 0))}
+                      {yen(allTransactions.filter((t) => t.date === selectedDate! && t.type === "expense" && !t.isReceiptMeta).reduce((s, t) => s + t.amount, 0))}
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
